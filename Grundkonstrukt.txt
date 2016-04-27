@@ -1,0 +1,231 @@
+# Grundkonstrukt zum Studienprojekt
+# Ablauf:
+# - Auswahl des Input tree über GUI (Tools/Misc)
+# - Starte über create-button
+# - Erzeuge Knoten durch:
+#       - erzeugen einer vorlage für die Knotenpunkte
+#       - kopiere das bMesh der Vorlage für jeden Knotenpunkt
+#         in das Ergebnis bMesh
+# - Erzeuge Verbindungen durch:
+#       - erzeugen einer Vorlage für die Verbindungen
+#       - kopiere das bMesh der Vorlage für jede Verbindung
+#         in das Ergebnis bMesh
+# Vorteil der Vorgehensweise:
+# durch die Erzeugung von Vorlagen für Knoten und Verbindungen kann 
+# ohne große Aufwand, durch Anpassung der Vorlage über eine GUI, die
+# Darstellung der gesamten Drahtmodellhülle angepasst werden
+
+
+
+import bpy
+import bmesh
+import math
+from math import *
+from mathutils import *
+import mathutils
+import time
+
+# Creating own properties needed for the script
+class DMHProps(bpy.types.PropertyGroup):
+    src_obj = bpy.props.StringProperty(name = "Source")
+
+# GUI class
+class DMH(bpy.types.Panel):
+    # Definitions GUI basics
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "TOOLS"
+    bl_label = "Drahtmodellhüllen"
+    
+    def draw(self, context):
+        
+        self.layout
+        layout = self.layout        
+        op = context.scene.dmh_opt
+        
+        # GUI layout
+        row = layout.row()
+        row.prop_search(op, "src_obj", bpy.data, 'objects')
+        row = layout.row()
+        row.operator("button.create_hull")
+
+# GUI Button class
+class CreateHull(bpy.types.Operator):
+    # Definitions GUI button
+    bl_idname = "button.create_hull"
+    bl_label = "Create DMH"
+
+    # execute on button click
+    def execute(self, context):
+        # Debug Info
+        zeit = time.time()
+        print("Modelling Hull")
+        
+        # Loading properties
+        options = context.scene.dmh_opt
+
+        # Creating Object und bMesh for the result of the script
+        dmh_mesh = bpy.data.meshes.new('dmh')
+        hull_obj = bpy.data.objects.new('Hull', dmh_mesh)
+        bpy.context.scene.objects.link(hull_obj)        
+        dmh_bmesh = bmesh.new()
+		
+        # Creating knots and edges
+        createKnots(bpy.data.objects[options.src_obj], dmh_bmesh)
+        createEdges(bpy.data.objects[options.src_obj], dmh_bmesh)
+        
+        # Copy results to the result object and free the memory
+        dmh_bmesh.to_mesh(dmh_mesh)
+        dmh_bmesh.free()		
+
+        # Debug Info
+        print("Finished in ", time.time() - zeit, " seconds.")
+        
+        return {'FINISHED'}
+
+# Function to transform a source bMesh and copy the result to a target bMesh
+# copyBmesh( 
+#            source bMesh,
+#            target bMesh,
+#            scaling matrix,
+#            rotation matrix,
+#            translation matrix
+#           )
+def copyBmesh(src, dmh_bmesh, sca, rot, loc):
+    source = src.copy()
+    verts = [vert.co for vert in source.verts]
+    faces = [face.verts for face in source.faces]
+    
+    # transform
+    source.transform(matrix=sca)
+    m = loc * rot
+    source.transform(matrix=m)
+    
+    # copy
+    for faceIndex in range(0, len(faces)):
+        dmh_bmesh.faces.new([dmh_bmesh.verts.new(verts[faces[faceIndex][o].index]) for o in range(0, len(faces[faceIndex]))])
+
+# Function to create the hull for knots of a input object/tree
+# createKnots( 
+#               input object/tree,
+#               target bMesh
+#               )
+def createKnots(this_object, dmh_bmesh):
+    # get world matrix and list of vertices of input object  
+    om = this_object.matrix_world  
+    listVertices = this_object.data.vertices 
+
+    # Debug Info
+    print("Starting to create ",len(listVertices) , " bMesh Knots")
+    
+    # Create one model bMesh for knots        
+    src = bmesh.new()
+    bmesh.ops.create_uvsphere(src, u_segments = 8, v_segments = 8, diameter = 1.0)
+
+    # Debug Info
+    counter = 0    
+
+    # For every knot    
+    for i in range(0, len(listVertices)):
+        counter += 1
+        lc = listVertices[i].co  
+        v = om * lc 
+        # Scaling matrix 
+        sca = Matrix.Scale(0.1, 4, (0.0, 0.0, 1.0)) * Matrix.Scale(0.1, 4, (0.0, 1.0, 0.0)) * Matrix.Scale(0.1, 4, (1.0, 0.0, 0.0))
+        # Rotation matrix
+        rot = Euler((0.0, 0.0, 0.0)).to_matrix().to_4x4()
+        # Translation matrix
+        loc = Matrix.Translation(v)
+        # Copy model bMesh to target bMesh
+        copyBmesh(src, dmh_bmesh, sca, rot, loc)
+		    
+    # Free memory
+    src.free()
+    
+    # Debug Infos                
+    print("Created ", counter, " Knots")
+    print("Anzahl Vertices: ", len(dmh_bmesh.verts))
+    print("Anzahle edges: ", len(dmh_bmesh.edges))
+    print("Anzahle faces: ", len(dmh_bmesh.faces))       
+
+# Function to calculate the distance between two 3d vertices
+def calcEdgeLength(vecA, vecB):
+    a = pow(vecA[0] - vecB[0], 2)
+    b = pow(vecA[1] - vecB[1], 2)
+    c = pow(vecA[2] - vecB[2], 2)
+    result = sqrt(a + b + c)
+    return result
+
+# Function to create the hull for edges of a input object/tree
+# createEdges( 
+#               input object/tree,
+#               target bMesh
+#               )    
+def createEdges(this_object, dmh_bmesh):
+    # transform input object/tree into bmesh
+    bMesh = bmesh.new()
+    bMesh.from_mesh(this_object.data)
+    om = this_object.matrix_world 
+       
+    # Create one model bMesh for edges
+    src = bmesh.new()
+    bmesh.ops.create_cone(src, segments=6, diameter1=0.025, diameter2=0.025, depth=1.0)
+
+    # For every knot 
+    for edge in bMesh.edges:
+        
+        # Get coordinates of vertices of the edge
+        vecA = edge.verts[0].co
+        vecB = edge.verts[1].co
+        
+        # If the two vertices are not equal
+        if (vecA != vecB):
+
+            # calculate the distance between the two vertices            
+            dist = calcEdgeLength(vecA, vecB)
+
+            # calculate the middlepoint coordinates
+            xLength = vecB[0] - vecA[0]
+            yLength = vecB[1] - vecA[1]
+            zLength = vecB[2] - vecA[2]
+            location = (xLength/2 + vecA[0], yLength/2 + vecA[1], zLength/2 + vecA[2])
+
+            # calculate the angles to raotate the model bMesh into position            
+            phi = atan2(yLength, xLength) 
+            theta = acos(zLength/dist)   
+
+            # Scaling matrix             
+            sca = Matrix.Scale(dist, 4, (0.0, 0.0, 1.0)) * Matrix.Scale(1.0, 4, (0.0, 1.0, 0.0)) * Matrix.Scale(1.0, 4, (1.0, 0.0, 0.0))
+            # Rotation matrix  
+            rot = mathutils.Euler((0.0, theta, phi)).to_matrix().to_4x4()
+            # Translation matrix  
+            loc = Matrix.Translation(location)
+            # Copy model bMesh to target bMesh        
+            copyBmesh(src, dmh_bmesh, sca, rot, loc)
+
+    # free memory		    
+    src.free()
+
+# regsiter classes
+def register():
+    bpy.utils.register_class(DMHProps)
+    bpy.types.Scene.dmh_opt = bpy.props.PointerProperty(type = DMHProps)
+    bpy.utils.register_class(DMH)
+    bpy.utils.register_class(CreateHull)
+
+# unregister classes    
+def unregister():
+    bpy.utils.unregister_module(__name__)
+
+if __name__ == "__main__":
+    register()
+
+
+
+
+
+
+
+
+
+
+
