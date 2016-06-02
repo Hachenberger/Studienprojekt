@@ -81,7 +81,7 @@ def createKnots(this_object, dmh_bmesh, radius, res_k):
         lc = listVertices[i].co  
         v = om * lc 
         # Scaling matrix 
-        sca = Matrix.Scale(0.1, 4, (0.0, 0.0, 1.0)) * Matrix.Scale(0.1, 4, (0.0, 1.0, 0.0)) * Matrix.Scale(0.1, 4, (1.0, 0.0, 0.0))
+        sca = Matrix.Scale(1.0, 4, (0.0, 0.0, 1.0)) * Matrix.Scale(1.0, 4, (0.0, 1.0, 0.0)) * Matrix.Scale(1.0, 4, (1.0, 0.0, 0.0))
         # Rotation matrix
         rot = Euler((0.0, 0.0, 0.0)).to_matrix().to_4x4()
         # Translation matrix
@@ -156,49 +156,26 @@ def createEdges(this_object, dmh_bmesh, radius, res_e):
     # free memory		    
     src.free()
 
-# Only for testing purpose
-def addKnots(context, radius, anz_vert, src_obj):
-    verts = []
-    faces = []
-    
-    for a in range(1, anz_vert+1):
-                for b in range(1, anz_vert+1):                    
-                    x = radius * sin((pi*2/anz_vert)*a) * cos((pi*2/anz_vert)*b)
-                    y = radius * sin((pi*2/anz_vert)*a) * sin((pi*2/anz_vert)*b)
-                    z = radius * cos((pi*2/anz_vert)*a)
-                    verts.append((x, y, z))
-    
-    
-    dmh_mesh = bpy.data.meshes.new('dmh')
-    dmh_mesh.from_pydata(verts, [], faces)
-    dmh_obj = bpy.data.objects.new("DMH", dmh_mesh)
-    context.scene.objects.link(dmh_obj)
-    context.scene.objects.active = dmh_obj
-    return dmh_obj
-
 class dmh_add(bpy.types.Operator):
     '''Add a Wireframe Cover'''
     bl_idname = "mesh.dmh_add"
     bl_label = "Add a Wireframe Cover"
     bl_options = {'REGISTER', 'UNDO'}
  
-    radius_k = FloatProperty(name="Knot-Radius", default=1.0, min=0.001, max=100.0)
+    radius_k = FloatProperty(name="Knot-Radius", default=0.1, min=0.001, max=100.0)
     res_k = IntProperty(name="Knot-Resolution", default=8, min=4, max=128)
     radius_e = FloatProperty(name="Edge-Radius", default=0.03, min=0.001, max=100.0)
     res_e = IntProperty(name="Edge-Resolution", default=6, min=3, max=128)
-    
-    
-    
-    #anz_vert = IntProperty(name="Number of Vertices", description="Number of Vertices", default=16, min=4, max=56)
- 
+
     def obj_list(self, context):  
         return [(o.name, o.name, o.type) for o in bpy.context.scene.objects]
-
-    src_obj = bpy.props.EnumProperty(items=obj_list, name = "Source", description = "Source for DMH") 
+ 
     def execute(self, context):
-
-        new_obj = do_it(context, 
-            self.radius_k, self.res_k, self.radius_e, self.res_e, self.src_obj)
+        if (bpy.context.active_object):
+            new_obj = do_it(context, 
+                self.radius_k, self.res_k, self.radius_e, self.res_e, bpy.context.active_object.name)
+        else:
+            self.report({'INFO'}, 'No active object.')
         return {'FINISHED'}
  
 def menu_func(self, context):
