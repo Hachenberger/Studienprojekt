@@ -127,12 +127,12 @@ def createEdges(this_object, dmh_bmesh, radius, res_e):
         # Get coordinates of vertices of the edge
         vecA = edge.verts[0].co
         vecB = edge.verts[1].co
-        
+
         # If the two vertices are not equal
-        if (vecA != vecB):
+        if ((vecA - vecB).length > 0):
 
             # calculate the distance between the two vertices            
-            dist = calcEdgeLength(vecA, vecB)
+            dist = ((vecB * om) - (vecA * om)).length
 
             # calculate the middlepoint coordinates
             xLength = vecB[0] - vecA[0]
@@ -140,9 +140,14 @@ def createEdges(this_object, dmh_bmesh, radius, res_e):
             zLength = vecB[2] - vecA[2]
             location = Vector((xLength/2 + vecA[0], yLength/2 + vecA[1], zLength/2 + vecA[2]))
 
-            # calculate the angles to raotate the model bMesh into position            
+            # calculate the angles to rotate the model bMesh into position
             phi = atan2(yLength, xLength) 
-            theta = acos(zLength/dist)   
+            help = zLength/(vecB - vecA).length
+            if (help < -1.0): # making sure that acos is used in range of -1.0 to 1.0
+                help = -1.0
+            elif (help > 1.0):
+                help = 1.0
+            theta = acos(help)
 
             # Scaling matrix             
             sca = Matrix.Scale(dist, 4, (0.0, 0.0, 1.0)) * Matrix.Scale(1.0, 4, (0.0, 1.0, 0.0)) * Matrix.Scale(1.0, 4, (1.0, 0.0, 0.0))
