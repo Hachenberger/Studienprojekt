@@ -12,50 +12,52 @@ import os
 from bpy_extras.io_utils import ImportHelper, ExportHelper
 
 list_vert = []
-list_edge = []
 list_face = []
+
 def load_data(fileName):
     f = open(fileName,'r')
     data = json.load(f)
     lv = data[0]
     for i in range(0,len(lv)):
         list_vert.append(lv[i])
-    le = data[1]
-    for i in range(0,len(le)):
-        list_edge.append(le[i])
-    lf = data[2]
+    lf = data[1]
     for i in range(0,len(lf)):
         list_face.append(lf[i])
-    make_obj()
-    bpy.ops.object.select_all(action='TOGGLE')
+    make_obj(False)
+
 def save_data(fileName):
     f = open(fileName,'w')
-    data = [list_vert, list_edge, list_face]
+    data = [list_vert, list_face]
     json.dump(data, f)
-def make_obj():
+
+def make_obj(smooth):
     print("Vertices: ", len(list_vert))
-    print("Edges: ", len(list_edge))
     print("Faces: ", len(list_face))
     dmh_mesh = bpy.data.meshes.new('dmh')
-    dmh_mesh.from_pydata(list_vert, list_edge, list_face)
+    dmh_mesh.from_pydata(list_vert, [], list_face)
     dmh_obj = bpy.data.objects.new("DMH", dmh_mesh)
     bpy.context.scene.objects.link(dmh_obj)
+    bpy.ops.object.select_all(action='DESELECT')
+    bpy.context.scene.objects.active = bpy.data.objects[dmh_obj.name]
+    bpy.data.objects[dmh_obj.name].select = True
+    if (smooth):
+        bpy.ops.object.shade_smooth()
+    else:
+        bpy.ops.object.shade_flat()
 
-def do_it(context, type_k, radius_k, res_k, radius_e, res_e, data):
+def do_it(context, type_k, radius_k, res_k, radius_e, res_e, smooth, data):
     # Debug Info
     zeit = time.time()
     print("Modelling Hull")     
 
     del list_vert[:]
-    del list_edge[:]
     del list_face[:]
-
 
     # Creating knots and edges
     createKnots(data, type_k, radius_k, res_k)
     createEdges(data, radius_e, res_e)
 
-    make_obj()
+    make_obj(smooth)
 
     # Debug Info
     print("Finished in ", time.time() - zeit, " seconds.")
@@ -81,8 +83,6 @@ def copyBmesh(src, sca, rot, loc):
 
     for v in source.verts:
         list_vert.append((v.co.x,v.co.y,v.co.z))
-    for e in source.edges:
-        list_edge.append([e.verts[0].index+start_index,e.verts[1].index+start_index])
     for f in source.faces:
         if len(f.verts) == 3:
             list_face.append([f.verts[0].index+start_index,f.verts[1].index+start_index,f.verts[2].index+start_index])
@@ -131,14 +131,6 @@ def createKnots(data, type_k, radius, res_k):
 		    
     # Free memory
     src.free()
-
-# Function to calculate the distance between two 3d vertices
-def calcEdgeLength(vecA, vecB):
-    a = pow(vecA[0] - vecB[0], 2)
-    b = pow(vecA[1] - vecB[1], 2)
-    c = pow(vecA[2] - vecB[2], 2)
-    result = sqrt(a + b + c)
-    return result
 
 # Function to create the hull for edges of a input object/tree
 # createEdges( 
@@ -210,6 +202,7 @@ class dmh_add(bpy.types.Operator):
     res_k = IntProperty(name="Knot-Resolution", default=8, min=4, max=128)
     radius_e = FloatProperty(name="Edge-Radius", default=0.03, min=0.001, max=100.0)
     res_e = IntProperty(name="Edge-Resolution", default=6, min=3, max=128)
+    smooth = BoolProperty(name="Smooth-Shading", default=False)
 
     def execute(self, context):
         if (len(bpy.context.selected_objects)==1):
@@ -222,7 +215,7 @@ class dmh_add(bpy.types.Operator):
             data = [v,e,om]
 
             new_obj = do_it(context, self.type_k,
-                self.radius_k, self.res_k, self.radius_e, self.res_e, data)
+                self.radius_k, self.res_k, self.radius_e, self.res_e, self.smooth, data)
         else:
             self.report({'INFO'}, 'No active object.')
             obj = bpy.ops.i.dmh('INVOKE_DEFAULT')
