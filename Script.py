@@ -7,26 +7,55 @@ import bmesh
 import math
 import mathutils
 import time
+import json
+import os
+from bpy_extras.io_utils import ImportHelper, ExportHelper
 
+list_vert = []
+list_edge = []
+list_face = []
+def load_data(fileName):
+    f = open(fileName,'r')
+    data = json.load(f)
+    lv = data[0]
+    for i in range(0,len(lv)):
+        list_vert.append(lv[i])
+    le = data[1]
+    for i in range(0,len(le)):
+        list_edge.append(le[i])
+    lf = data[2]
+    for i in range(0,len(lf)):
+        list_face.append(lf[i])
+    make_obj()
+    bpy.ops.object.select_all(action='TOGGLE')
+def save_data(fileName):
+    f = open(fileName,'w')
+    data = [list_vert, list_edge, list_face]
+    json.dump(data, f)
+def make_obj():
+    print("Vertices: ", len(list_vert))
+    print("Edges: ", len(list_edge))
+    print("Faces: ", len(list_face))
+    dmh_mesh = bpy.data.meshes.new('dmh')
+    dmh_mesh.from_pydata(list_vert, list_edge, list_face)
+    dmh_obj = bpy.data.objects.new("DMH", dmh_mesh)
+    bpy.context.scene.objects.link(dmh_obj)
 
-def do_it(context, radius_k, res_k, radius_e, res_e, src_obj):
+def do_it(context, type_k, radius_k, res_k, radius_e, res_e, data):
     # Debug Info
     zeit = time.time()
     print("Modelling Hull")     
 
-    # Creating Object und bMesh for the result of the script
-    dmh_mesh = bpy.data.meshes.new('dmh')
-    hull_obj = bpy.data.objects.new('Hull', dmh_mesh)
-    bpy.context.scene.objects.link(hull_obj)        
-    dmh_bmesh = bmesh.new()
-		
+    del list_vert[:]
+    del list_edge[:]
+    del list_face[:]
+
+
     # Creating knots and edges
-    createKnots(bpy.data.objects[src_obj], dmh_bmesh, radius_k, res_k)
-    createEdges(bpy.data.objects[src_obj], dmh_bmesh, radius_e, res_e)
-        
-    # Copy results to the result object and free the memory
-    dmh_bmesh.to_mesh(dmh_mesh)
-    dmh_bmesh.free()		
+    createKnots(data, type_k, radius_k, res_k)
+    createEdges(data, radius_e, res_e)
+
+    make_obj()
 
     # Debug Info
     print("Finished in ", time.time() - zeit, " seconds.")
@@ -41,36 +70,47 @@ def do_it(context, radius_k, res_k, radius_e, res_e, src_obj):
 #            rotation matrix,
 #            translation matrix
 #           )
-def copyBmesh(src, dmh_bmesh, sca, rot, loc):
+def copyBmesh(src, sca, rot, loc):
     source = src.copy()
-    verts = [vert.co for vert in source.verts]
-    faces = [face.verts for face in source.faces]
+    start_index = len(list_vert)
     
     # transform
     source.transform(matrix=sca)
     m = loc * rot
     source.transform(matrix=m)
-    
-    # copy
-    for faceIndex in range(0, len(faces)):
-        dmh_bmesh.faces.new([dmh_bmesh.verts.new(verts[faces[faceIndex][o].index]) for o in range(0, len(faces[faceIndex]))])
+
+    for v in source.verts:
+        list_vert.append((v.co.x,v.co.y,v.co.z))
+    for e in source.edges:
+        list_edge.append([e.verts[0].index+start_index,e.verts[1].index+start_index])
+    for f in source.faces:
+        if len(f.verts) == 3:
+            list_face.append([f.verts[0].index+start_index,f.verts[1].index+start_index,f.verts[2].index+start_index])
+        elif len(f.verts) == 4:
+            list_face.append([f.verts[0].index+start_index,f.verts[1].index+start_index,f.verts[2].index+start_index,f.verts[3].index+start_index])
+
 
 # Function to create the hull for knots of a input object/tree
 # createKnots( 
 #               input object/tree,
 #               target bMesh
 #               )
-def createKnots(this_object, dmh_bmesh, radius, res_k):
+def createKnots(data, type_k, radius, res_k):
     # get world matrix and list of vertices of input object  
-    om = this_object.matrix_world  
-    listVertices = this_object.data.vertices 
+    om = data[2]
+    listVertices = data[0]
 
     # Debug Info
     print("Starting to create ",len(listVertices) , " bMesh Knots")
     
     # Create one model bMesh for knots        
     src = bmesh.new()
-    bmesh.ops.create_uvsphere(src, u_segments = res_k, v_segments = res_k, diameter = radius)
+    if (type_k=="UV"):
+        bmesh.ops.create_uvsphere(src, u_segments = res_k, v_segments = res_k, diameter = radius)
+    elif (type_k=="ICO"):
+        bmesh.ops.create_icosphere(src, subdivisions = 4, diameter = radius)
+    elif (type_k=="CUBE"):
+        bmesh.ops.create_cube(src, size = radius*2)
 
     # Debug Info
     counter = 0    
@@ -87,16 +127,10 @@ def createKnots(this_object, dmh_bmesh, radius, res_k):
         # Translation matrix
         loc = Matrix.Translation(v)
         # Copy model bMesh to target bMesh
-        copyBmesh(src, dmh_bmesh, sca, rot, loc)
+        copyBmesh(src, sca, rot, loc)
 		    
     # Free memory
     src.free()
-    
-    # Debug Infos                
-    print("Created ", counter, " Knots")
-    print("Anzahl Vertices: ", len(dmh_bmesh.verts))
-    print("Anzahle edges: ", len(dmh_bmesh.edges))
-    print("Anzahle faces: ", len(dmh_bmesh.faces))       
 
 # Function to calculate the distance between two 3d vertices
 def calcEdgeLength(vecA, vecB):
@@ -111,18 +145,16 @@ def calcEdgeLength(vecA, vecB):
 #               input object/tree,
 #               target bMesh
 #               )    
-def createEdges(this_object, dmh_bmesh, radius, res_e):
+def createEdges(data, radius, res_e):
     # transform input object/tree into bmesh
-    bMesh = bmesh.new()
-    bMesh.from_mesh(this_object.data)
-    om = this_object.matrix_world 
+    om = data[2]
        
     # Create one model bMesh for edges
     src = bmesh.new()
     bmesh.ops.create_cone(src, segments=res_e, diameter1=radius, diameter2=radius, depth=1.0)
 
     # For every knot 
-    for edge in bMesh.edges:
+    for edge in data[1]:
         
         # Get coordinates of vertices of the edge
         vecA = edge.verts[0].co
@@ -156,7 +188,7 @@ def createEdges(this_object, dmh_bmesh, radius, res_e):
             # Translation matrix  
             loc = Matrix.Translation(om*location)
             # Copy model bMesh to target bMesh        
-            copyBmesh(src, dmh_bmesh, sca, rot, loc)
+            copyBmesh(src, sca, rot, loc)
 
     # free memory		    
     src.free()
@@ -167,34 +199,93 @@ class dmh_add(bpy.types.Operator):
     bl_label = "Add a Wireframe Cover"
     bl_options = {'REGISTER', 'UNDO'}
  
+    knot_types = [
+    ("ICO", "Ico-Sphere", "", 1),
+    ("UV", "UV-Sphere", "", 2),
+    ("CUBE", "Cube", "", 3),
+    ]
+
+    type_k = EnumProperty(items=knot_types, default="UV", name="Knot-Type")
     radius_k = FloatProperty(name="Knot-Radius", default=0.1, min=0.001, max=100.0)
     res_k = IntProperty(name="Knot-Resolution", default=8, min=4, max=128)
     radius_e = FloatProperty(name="Edge-Radius", default=0.03, min=0.001, max=100.0)
     res_e = IntProperty(name="Edge-Resolution", default=6, min=3, max=128)
 
-    def obj_list(self, context):  
-        return [(o.name, o.name, o.type) for o in bpy.context.scene.objects]
- 
     def execute(self, context):
-        if (bpy.context.active_object):
-            new_obj = do_it(context, 
-                self.radius_k, self.res_k, self.radius_e, self.res_e, bpy.context.active_object.name)
+        if (len(bpy.context.selected_objects)==1):
+            obj = bpy.context.selected_objects[0]
+            om = obj.matrix_world
+            v = obj.data.vertices
+            bm = bmesh.new()
+            bm.from_mesh(obj.data)
+            e = bm.edges
+            data = [v,e,om]
+
+            new_obj = do_it(context, self.type_k,
+                self.radius_k, self.res_k, self.radius_e, self.res_e, data)
         else:
             self.report({'INFO'}, 'No active object.')
+            obj = bpy.ops.i.dmh('INVOKE_DEFAULT')
         return {'FINISHED'}
  
 def menu_func(self, context):
     self.layout.operator("mesh.dmh_add", 
         text="Wireframe Cover", 
         icon='OUTLINER_OB_EMPTY')
- 
+
+class DMHImport(bpy.types.Operator, ImportHelper):
+    """Import .dmh file Operator"""
+
+    #: Name of function for calling the nif export operator.
+    bl_idname = "i.dmh"
+
+    #: How the nif import operator is labelled in the user interface.
+    bl_label = "Import DMH"
+
+    def execute(self, context):
+        path = "Importing " + self.properties.filepath
+        self.report({'INFO'}, path)
+        load_data(self.properties.filepath)
+        return{'FINISHED'}
+
+class DMHExport(bpy.types.Operator, ExportHelper):
+    """Export .dmh file Operator"""
+
+    #: Name of function for calling the nif export operator.
+    bl_idname = "e.dmh"
+
+    #: How the nif import operator is labelled in the user interface.
+    bl_label = "Export DMH"
+
+    filename_ext = ".dmh"
+    filter_glob = StringProperty(default="*.dmh", options={'HIDDEN'})
+
+    def execute(self, context):
+        path = "Exporting " + self.properties.filepath
+        self.report({'INFO'}, path)
+        save_data(self.properties.filepath)
+        return{'FINISHED'}
+
+def menu_func_import(self, context):
+    self.layout.operator(
+        DMHImport.bl_idname, text="DMH (.dmh)")
+
+def menu_func_export(self, context):
+    self.layout.operator(
+        DMHExport.bl_idname, text="DMH (.dmh)")
+
 def register():
    bpy.utils.register_module(__name__)
    bpy.types.INFO_MT_add.prepend(menu_func)
+   bpy.types.INFO_MT_file_import.append(menu_func_import)
+   bpy.types.INFO_MT_file_export.append(menu_func_export)
  
 def unregister():
     bpy.utils.unregister_module(__name__)
+    bpy.utils.register_module(ToolsPanel)
     bpy.types.INFO_MT_add.remove(menu_func)
- 
+    bpy.types.INFO_MT_file_import.remove(menu_func_import)
+    bpy.types.INFO_MT_file_export.remove(menu_func_export)
+
 if __name__ == "__main__":
     register()
