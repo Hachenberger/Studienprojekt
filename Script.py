@@ -122,17 +122,18 @@ def createKnots(data, type_k, pro_v, radius, res_k):
             bw = listVertices[i].bevel_weight
         else:
             bw = 1.0
-        lc = listVertices[i].co  
-        v = om * lc 
-        # Scaling matrix 
-        sca = Matrix.Scale(1.0*bw, 4, (0.0, 0.0, 1.0)) * Matrix.Scale(1.0*bw, 4, (0.0, 1.0, 0.0)) * Matrix.Scale(1.0*bw, 4, (1.0, 0.0, 0.0))
-        # Rotation matrix
-        rot = Euler((0.0, 0.0, 0.0)).to_matrix().to_4x4()
-        # Translation matrix
-        loc = Matrix.Translation(v)
-        # Copy model bMesh to target bMesh
-        copyBmesh(src, sca, rot, loc)
-		    
+        if (bw != 0.0):
+            lc = listVertices[i].co
+            v = om * lc
+            # Scaling matrix
+            sca = Matrix.Scale(1.0*bw, 4, (0.0, 0.0, 1.0)) * Matrix.Scale(1.0*bw, 4, (0.0, 1.0, 0.0)) * Matrix.Scale(1.0*bw, 4, (1.0, 0.0, 0.0))
+            # Rotation matrix
+            rot = Euler((0.0, 0.0, 0.0)).to_matrix().to_4x4()
+            # Translation matrix
+            loc = Matrix.Translation(v)
+            # Copy model bMesh to target bMesh
+            copyBmesh(src, sca, rot, loc)
+
     # Free memory
     src.free()
 
@@ -217,7 +218,6 @@ class dmh_add(bpy.types.Operator):
             bm = bmesh.new()
             bm.from_mesh(obj.data)
             e = bm.edges
-            bw = []
             data = [v,e,om]
 
             new_obj = do_it(context, self.type_k, self.pro_v,
