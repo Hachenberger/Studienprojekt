@@ -45,7 +45,7 @@ def make_obj(smooth):
     else:
         bpy.ops.object.shade_flat()
 
-def do_it(context, type_k, radius_k, res_k, radius_e, res_e, smooth, data):
+def do_it(context, type_k, pro_v, radius_k, res_k, radius_e, res_e, smooth, data):
     # Debug Info
     zeit = time.time()
     print("Modelling Hull")     
@@ -54,7 +54,7 @@ def do_it(context, type_k, radius_k, res_k, radius_e, res_e, smooth, data):
     del list_face[:]
 
     # Creating knots and edges
-    createKnots(data, type_k, radius_k, res_k)
+    createKnots(data, type_k, pro_v, radius_k, res_k)
     createEdges(data, radius_e, res_e)
 
     make_obj(smooth)
@@ -95,7 +95,7 @@ def copyBmesh(src, sca, rot, loc):
 #               input object/tree,
 #               target bMesh
 #               )
-def createKnots(data, type_k, radius, res_k):
+def createKnots(data, type_k, pro_v, radius, res_k):
     # get world matrix and list of vertices of input object  
     om = data[2]
     listVertices = data[0]
@@ -118,10 +118,14 @@ def createKnots(data, type_k, radius, res_k):
     # For every knot    
     for i in range(0, len(listVertices)):
         counter += 1
+        if (pro_v):
+            bw = listVertices[i].bevel_weight
+        else:
+            bw = 1.0
         lc = listVertices[i].co  
         v = om * lc 
         # Scaling matrix 
-        sca = Matrix.Scale(1.0, 4, (0.0, 0.0, 1.0)) * Matrix.Scale(1.0, 4, (0.0, 1.0, 0.0)) * Matrix.Scale(1.0, 4, (1.0, 0.0, 0.0))
+        sca = Matrix.Scale(1.0*bw, 4, (0.0, 0.0, 1.0)) * Matrix.Scale(1.0*bw, 4, (0.0, 1.0, 0.0)) * Matrix.Scale(1.0*bw, 4, (1.0, 0.0, 0.0))
         # Rotation matrix
         rot = Euler((0.0, 0.0, 0.0)).to_matrix().to_4x4()
         # Translation matrix
@@ -198,6 +202,7 @@ class dmh_add(bpy.types.Operator):
     ]
 
     type_k = EnumProperty(items=knot_types, default="UV", name="Knot-Type")
+    pro_v = BoolProperty(name="Pro-Vertex-Radius", default=False)
     radius_k = FloatProperty(name="Knot-Radius", default=0.1, min=0.001, max=100.0)
     res_k = IntProperty(name="Knot-Resolution", default=8, min=4, max=128)
     radius_e = FloatProperty(name="Edge-Radius", default=0.03, min=0.001, max=100.0)
@@ -212,13 +217,14 @@ class dmh_add(bpy.types.Operator):
             bm = bmesh.new()
             bm.from_mesh(obj.data)
             e = bm.edges
+            bw = []
             data = [v,e,om]
 
-            new_obj = do_it(context, self.type_k,
+            new_obj = do_it(context, self.type_k, self.pro_v,
                 self.radius_k, self.res_k, self.radius_e, self.res_e, self.smooth, data)
         else:
             self.report({'INFO'}, 'No active object.')
-            obj = bpy.ops.i.dmh('INVOKE_DEFAULT')
+#            obj = bpy.ops.i.dmh('INVOKE_DEFAULT')
         return {'FINISHED'}
  
 def menu_func(self, context):
