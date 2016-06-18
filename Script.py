@@ -60,7 +60,7 @@ def do_it(context, type_k, pro_v, radius_k, res_k, radius_e, res_e, smooth, data
     make_obj(smooth)
 
     # Debug Info
-    print("Finished in ", time.time() - zeit, " seconds.")
+    print("Finished in ", time.time() - zeit, " seconds.\n")
         
     return {'FINISHED'}
 
@@ -102,13 +102,14 @@ def createKnots(data, type_k, pro_v, radius, res_k):
 
     # Debug Info
     print("Starting to create ",len(listVertices) , " bMesh Knots")
+    print("Knot-Type: ", type_k)
     
     # Create one model bMesh for knots        
     src = bmesh.new()
     if (type_k=="UV"):
         bmesh.ops.create_uvsphere(src, u_segments = res_k, v_segments = res_k, diameter = radius)
     elif (type_k=="ICO"):
-        bmesh.ops.create_icosphere(src, subdivisions = 4, diameter = radius)
+        bmesh.ops.create_icosphere(src, subdivisions = res_k, diameter = radius)
     elif (type_k=="CUBE"):
         bmesh.ops.create_cube(src, size = radius*2)
 
@@ -154,14 +155,14 @@ def createEdges(data, radius, res_e):
     for edge in data[1]:
         
         # Get coordinates of vertices of the edge
-        vecA = edge.verts[0].co
-        vecB = edge.verts[1].co
+        vecA = om * data[0][edge.verts[0].index].co
+        vecB = om * data[0][edge.verts[1].index].co
 
         # If the two vertices are not equal
         if ((vecA - vecB).length > 0):
 
             # calculate the distance between the two vertices            
-            dist = ((vecB * om) - (vecA * om)).length
+            dist = ((vecB) - (vecA)).length - (2*radius)
 
             # calculate the middlepoint coordinates
             xLength = vecB[0] - vecA[0]
@@ -183,7 +184,7 @@ def createEdges(data, radius, res_e):
             # Rotation matrix  
             rot = mathutils.Euler((0.0, theta, phi)).to_matrix().to_4x4()
             # Translation matrix  
-            loc = Matrix.Translation(om*location)
+            loc = Matrix.Translation(location)
             # Copy model bMesh to target bMesh        
             copyBmesh(src, sca, rot, loc)
 
@@ -202,10 +203,30 @@ class dmh_add(bpy.types.Operator):
     ("CUBE", "Cube", "", 3),
     ]
 
-    type_k = EnumProperty(items=knot_types, default="UV", name="Knot-Type")
+    def update_type_k(self, context):
+        if self.type_k == "ICO":
+            self.res_k = 1
+        elif self.type_k == "CUBE":
+            self.res_k = 0
+        elif self.type_k == "UV":
+            self.res_k = 4
+
+    def update_res_k(self, context):
+        min = 0
+        print(self)
+        if self.type_k == "ICO":
+            min = 1
+        elif self.type_k == "CUBE":
+            self.res_k = 0
+        elif self.type_k == "UV":
+            min = 3
+        if self.res_k < min:
+            self.res_k = min
+
+    type_k = EnumProperty(items=knot_types, default="UV", name="Knot-Type", update=update_type_k)
     pro_v = BoolProperty(name="Pro-Vertex-Radius", default=False)
     radius_k = FloatProperty(name="Knot-Radius", default=0.1, min=0.001, max=100.0)
-    res_k = IntProperty(name="Knot-Resolution", default=8, min=4, max=128)
+    res_k = IntProperty(name="Knot-Resolution", default=3, min=0, max=128, update=update_res_k)
     radius_e = FloatProperty(name="Edge-Radius", default=0.03, min=0.001, max=100.0)
     res_e = IntProperty(name="Edge-Resolution", default=6, min=3, max=128)
     smooth = BoolProperty(name="Smooth-Shading", default=False)
@@ -224,7 +245,6 @@ class dmh_add(bpy.types.Operator):
                 self.radius_k, self.res_k, self.radius_e, self.res_e, self.smooth, data)
         else:
             self.report({'INFO'}, 'No active object.')
-#            obj = bpy.ops.i.dmh('INVOKE_DEFAULT')
         return {'FINISHED'}
  
 def menu_func(self, context):
