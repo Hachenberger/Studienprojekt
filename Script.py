@@ -32,6 +32,13 @@ def save_data(fileName):
     json.dump(data, f)
 
 def make_obj(smooth, data):
+    
+    for i in range(0,len(list_edge_connect)):
+        if len(list_edge_connect[i]) == data[3]:
+            vec_v = data[2]*data[0][i].co
+            list_vert.append((vec_v.x,vec_v.y,vec_v.z))
+            list_edge_connect[i].append(len(list_vert)-1)
+
     print("Vertices: ", len(list_vert))
     print("Faces: ", len(list_face))
     dmh_mesh = bpy.data.meshes.new('dmh')
@@ -39,7 +46,8 @@ def make_obj(smooth, data):
 
     bm = bmesh.new()
     bm.from_mesh(dmh_mesh)
-    bm.verts.ensure_lookup_table()    
+    bm.verts.ensure_lookup_table()
+
     for i in range(0,len(list_edge_connect)):
         if len(list_edge_connect[i]) > 3:
             if (data[0][i].bevel_weight == 0.0):
@@ -273,7 +281,7 @@ class dmh_add(bpy.types.Operator):
             bm = bmesh.new()
             bm.from_mesh(obj.data)
             e = bm.edges
-            data = [v,e,om]
+            data = [v,e,om,self.res_e]
 
             new_obj = do_it(context, self.type_k, self.pro_v, self.pro_e,
                 self.radius_k, self.res_k, self.radius_e, self.res_e, self.smooth, data)
