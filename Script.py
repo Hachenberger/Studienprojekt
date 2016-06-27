@@ -68,7 +68,7 @@ def do_it(context, type_k, pro_v, pro_e, radius_k, res_k, radius_e, res_e, smoot
 
     # Creating knots and edges
     createKnots(data, type_k, pro_v, radius_k, res_k)
-    createEdges(data, pro_e, radius_e, res_e)
+    createEdges(data, pro_e, radius_k, radius_e, res_e)
 
     make_obj(smooth, data)
 
@@ -156,13 +156,13 @@ def createKnots(data, type_k, pro_v, radius, res_k):
 #               input object/tree,
 #               target bMesh
 #               )    
-def createEdges(data, pro_e, radius, res_e):
+def createEdges(data, pro_e, radius_k, radius_e, res_e):
     # transform input object/tree into bmesh
     om = data[2]
        
     # Create one model bMesh for edges
     src = bmesh.new()
-    bmesh.ops.create_cone(src, segments=res_e, diameter1=radius, diameter2=radius, depth=1.0)
+    bmesh.ops.create_cone(src, segments=res_e, diameter1=radius_e, diameter2=radius_e, depth=1.0)
 
     # For every knot 
     for edge in data[1]:
@@ -175,7 +175,10 @@ def createEdges(data, pro_e, radius, res_e):
         if ((vecA - vecB).length > 0):
 
             # calculate the distance between the two vertices            
-            dist = ((vecB) - (vecA)).length - (2*radius)
+            if radius_k-radius_e < 2*radius_e:
+                dist = ((vecB) - (vecA)).length - (radius_k-radius_e)
+            else:
+                dist = ((vecB) - (vecA)).length - (2*radius_e)
 
             # calculate the middlepoint coordinates
             xLength = vecB[0] - vecA[0]
@@ -245,12 +248,20 @@ class dmh_add(bpy.types.Operator):
         if self.res_k < min:
             self.res_k = min
 
+    def update_radius_k(self,context):
+        if self.radius_k < self.radius_e:
+            self.radius_k=self.radius_e
+
+    def update_radius_e(self,context):
+        if self.radius_e > self.radius_k:
+            self.radius_e=self.radius_k
+
     type_k = EnumProperty(items=knot_types, default="UV", name="Knot-Type", update=update_type_k)
     pro_v = BoolProperty(name="Knot PVR", default=False)
     pro_e = BoolProperty(name="Edge PVR", default=False)
-    radius_k = FloatProperty(name="Knot-Radius", default=0.1, min=0.001, max=100.0)
+    radius_k = FloatProperty(name="Knot-Radius", default=0.1, min=0.001, max=100.0,update=update_radius_k)
     res_k = IntProperty(name="Knot-Resolution", default=8, min=0, max=128, update=update_res_k)
-    radius_e = FloatProperty(name="Edge-Radius", default=0.03, min=0.001, max=100.0)
+    radius_e = FloatProperty(name="Edge-Radius", default=0.03, min=0.001, max=100.0,update=update_radius_e)
     res_e = IntProperty(name="Edge-Resolution", default=6, min=3, max=128)
     smooth = BoolProperty(name="Smooth-Shading", default=False)
 
