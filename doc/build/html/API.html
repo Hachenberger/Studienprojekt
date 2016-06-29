@@ -1,0 +1,285 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>AddOn-API &mdash; Wireframe Cover 28.06.2016 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Wireframe Cover 28.06.2016 documentation" href="index.html"/>
+        <link rel="next" title="User Manual" href="Manual.html"/>
+        <link rel="prev" title="Drahtmodellhuellen AddOn - Dokumentation" href="index.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Wireframe Cover
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">AddOn-API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Manual.html">User Manual</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Wireframe Cover</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>AddOn-API</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/API.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-Script">
+<span id="addon-api"></span><h1>AddOn-API<a class="headerlink" href="#module-Script" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="Script.do_it">
+<code class="descclassname">Script.</code><code class="descname">do_it</code><span class="sig-paren">(</span><em>context</em>, <em>type_k</em>, <em>pro_v</em>, <em>pro_e</em>, <em>radius_k</em>, <em>res_k</em>, <em>radius_e</em>, <em>res_e</em>, <em>smooth</em>, <em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#Script.do_it" title="Permalink to this definition">¶</a></dt>
+<dd><p>initializing global lists list_vert and list_face and calling methods to create knots, edges and object</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>context</strong> (<em>context</em>) &#8211; actual context</li>
+<li><strong>type_k</strong> (<em>enumeration [&quot;ICO&quot;, &quot;UV&quot;, &quot;CUBE&quot;]</em>) &#8211; type of knots</li>
+<li><strong>pro_v</strong> (<em>boolean</em>) &#8211; option to choose Pro-Vertex-Radius for knots</li>
+<li><strong>pro_e</strong> (<em>boolean</em>) &#8211; option to choose Pro-Vertex-Radius for edges</li>
+<li><strong>radius_k</strong> (<em>float</em>) &#8211; radius of knots</li>
+<li><strong>res_k</strong> (<em>int</em>) &#8211; resolution of knots</li>
+<li><strong>radius_e</strong> (<em>float</em>) &#8211; radius of edges</li>
+<li><strong>res_e</strong> (<em>int</em>) &#8211; resolution of edges</li>
+<li><strong>smooth</strong> (<em>boolean</em>) &#8211; Option to use smooth shading</li>
+<li><strong>data</strong> (<em>list [list of vertices, list of bmesh edges, world matrix, edge resolution]</em>) &#8211; data of input wireframe</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">&#8216;FINISHED&#8217;</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="Script.load_data">
+<code class="descclassname">Script.</code><code class="descname">load_data</code><span class="sig-paren">(</span><em>fileName</em><span class="sig-paren">)</span><a class="headerlink" href="#Script.load_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>load a &#8216;.dmh&#8217;-File</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>fileName</strong> (<em>str.</em>) &#8211; Path and name of file</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">none &#8211; saving data in global lists list_vert and list_face</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="Script.make_obj">
+<code class="descclassname">Script.</code><code class="descname">make_obj</code><span class="sig-paren">(</span><em>smooth</em>, <em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#Script.make_obj" title="Permalink to this definition">¶</a></dt>
+<dd><p>create a new object by using parameters and global lists list_vert and list_face</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>smooth</strong> (<em>boolean</em>) &#8211; Option to use smooth shading</li>
+<li><strong>data</strong> (<em>list [list of vertices, list of bmesh edges, world matrix, edge resolution]</em>) &#8211; data of input wireframe</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">none</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="Script.save_data">
+<code class="descclassname">Script.</code><code class="descname">save_data</code><span class="sig-paren">(</span><em>fileName</em><span class="sig-paren">)</span><a class="headerlink" href="#Script.save_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>save a &#8216;.dmh&#8217;-File</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>fileName</strong> (<em>str.</em>) &#8211; Path and name of file</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">none &#8211; saving global lists list_vert and list_face to file in json format</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="Manual.html" class="btn btn-neutral float-right" title="User Manual" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="Drahtmodellhuellen AddOn - Dokumentation" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, Kay Hachenberger &amp; Bersant Kabashi.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'28.06.2016',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
