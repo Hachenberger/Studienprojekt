@@ -16,13 +16,6 @@ list_face = []
 list_edge_connect = [[]]
 
 def load_data(fileName):
-    """Function to load a .dmh File
-
-    :param fileName: Path and name of file 
-    :type fileName: str. 
-    :returns: none -- saving data in global lists list_vert and list_face 
-
-    """ 
     f = open(fileName,'r')
     data = json.load(f)
     lv = data[0]
