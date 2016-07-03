@@ -11,47 +11,115 @@ import json
 import os
 from bpy_extras.io_utils import ImportHelper, ExportHelper
 
-list_vert = []
-list_face = []
-list_edge_connect = [[]]
+LIST_VERT = []
+LIST_FACE = []
+LIST_EDGE_CONNECT = [[]]
+
+DEFAULT_TYPE_K = "UV"
+DEFAULT_PRO_V = False
+DEFAULT_PRO_E = False
+DEFAULT_RADIUS_K = 0.1
+DEFAULT_RES_K = 8
+DEFAULT_RADIUS_E = 0.03
+DEFAULT_RES_E = 6
+DEFAULT_SMOOTH = False
+DEFAULT_IMPORT = False
+IMPORT_TYPE_K = "UV"
+IMPORT_PRO_V = False
+IMPORT_PRO_E = False
+IMPORT_RADIUS_K = 0.1
+IMPORT_RES_K = 8
+IMPORT_RADIUS_E = 0.03
+IMPORT_RES_E = 6
+IMPORT_SMOOTH = False
+IMPORT_DATA = []
+
+state = [
+    ("NEW", "New", "", 1),
+    ("IMPORT", "Import", "", 2),
+    ("RUN", "Run", "", 3),
+    ]
+
+DEFAULT_ACTUAL_STATE = "NEW"
 
 def load_data(fileName):
     f = open(fileName,'r')
-    data = json.load(f)
-    lv = data[0]
-    for i in range(0,len(lv)):
-        list_vert.append(lv[i])
-    lf = data[1]
-    for i in range(0,len(lf)):
-        list_face.append(lf[i])
-    make_obj(False)
+    data_load = json.load(f)
+    data = data_load[0]
+    
+    global DEFAULT_ACTUAL_STATE
+    global IMPORT_DATA
+    global IMPORT_TYPE_K
+    global IMPORT_PRO_V
+    global IMPORT_PRO_E
+    global IMPORT_RES_K
+    global IMPORT_RADIUS_K
+    global IMPORT_RES_E
+    global IMPORT_RADIUS_E
+    global IMPORT_SMOOTH
+
+    IMPORT_DATA = [data[0],data[1],data[2],data[3]]    
+    IMPORT_TYPE_K = data[4]
+    IMPORT_PRO_V = data[5]
+    IMPORT_PRO_E = data[6]
+    IMPORT_RES_K = data[7]
+    IMPORT_RADIUS_K = data[8]
+    IMPORT_RES_E = data[9]
+    IMPORT_RADIUS_E = data[10]
+    IMPORT_SMOOTH = data[11]    
+    
+    DEFAULT_ACTUAL_STATE = "IMPORT"
+    bpy.ops.mesh.dmh_add()
+    DEFAULT_ACTUAL_STATE = "NEW"
 
 def save_data(fileName):
     f = open(fileName,'w')
-    data = [list_vert, list_face]
+    
+    list_vertices = []
+    for v in bpy.types.Scene.data[0]:
+        list_vertices.append([v[0],v[1],v[2]]) 
+        
+    options = bpy.types.Scene    
+    
+    world_pos = [options.data[2][0][3], options.data[2][1][3], options.data[2][2][3]]
+      
+    wireframe = [
+                list_vertices, 
+                options.data[1], world_pos, options.data[3],
+                options.type_k,
+                options.pro_v,
+                options.pro_e,
+                options.res_k,
+                options.radius_k,
+                options.res_e,
+                options.radius_e,
+                options.smooth
+                ]
+
+    data = [wireframe]
     json.dump(data, f)
 
 def make_obj(smooth, data):
-    
-    for i in range(0,len(list_edge_connect)):
-        if len(list_edge_connect[i]) == data[3]:
-            vec_v = data[2]*data[0][i].co
-            list_vert.append((vec_v.x,vec_v.y,vec_v.z))
-            list_edge_connect[i].append(len(list_vert)-1)
+   
+    for i in range(0,len(LIST_EDGE_CONNECT)):
+        if len(LIST_EDGE_CONNECT[i]) == bpy.types.Scene.res_e:
+            vec_v = data[2]*data[0][i]
+            LIST_VERT.append((vec_v.x,vec_v.y,vec_v.z))
+            LIST_EDGE_CONNECT[i].append(len(LIST_VERT)-1)
 
-    print("Vertices: ", len(list_vert))
-    print("Faces: ", len(list_face))
+    print("Vertices: ", len(LIST_VERT))
+    print("Faces: ", len(LIST_FACE))
     dmh_mesh = bpy.data.meshes.new('dmh')
-    dmh_mesh.from_pydata(list_vert, [], list_face)
+    dmh_mesh.from_pydata(LIST_VERT, [], LIST_FACE)
 
     bm = bmesh.new()
     bm.from_mesh(dmh_mesh)
     bm.verts.ensure_lookup_table()
 
-    for i in range(0,len(list_edge_connect)):
-        if len(list_edge_connect[i]) > 3:
-            if (data[0][i].bevel_weight == 0.0):
-                bmesh.ops.convex_hull(bm,input=[bm.verts[d] for d in list_edge_connect[i]])    
+    for i in range(0,len(LIST_EDGE_CONNECT)):
+        if len(LIST_EDGE_CONNECT[i]) > 3:
+            if (data[3][i] == 0.0):
+                bmesh.ops.convex_hull(bm,input=[bm.verts[d] for d in LIST_EDGE_CONNECT[i]])    
     bm.to_mesh(dmh_mesh)
     
     bm.free
@@ -65,18 +133,29 @@ def make_obj(smooth, data):
     else:
         bpy.ops.object.shade_flat()
 
-def do_it(context, type_k, pro_v, pro_e, radius_k, res_k, radius_e, res_e, smooth, data):
+def do_it(context):
     # Debug Info
     zeit = time.time()
     print("Modelling Hull")     
 
-    del list_vert[:]
-    del list_face[:]
-    del list_edge_connect[:]
+    del LIST_VERT[:]
+    del LIST_FACE[:]
+    del LIST_EDGE_CONNECT[:]
 
     # Creating knots and edges
+    type_k = bpy.types.Scene.type_k
+    res_k = bpy.types.Scene.res_k
+    res_e = bpy.types.Scene.res_e
+    radius_k = bpy.types.Scene.radius_k
+    radius_e = bpy.types.Scene.radius_e
+    pro_e = bpy.types.Scene.pro_e
+    pro_v = bpy.types.Scene.pro_v
+    smooth = bpy.types.Scene.smooth
+    data = bpy.types.Scene.data
+    
     createKnots(data, type_k, pro_v, radius_k, res_k)
     createEdges(data, pro_e, radius_k, radius_e, res_e)
+
 
     make_obj(smooth, data)
 
@@ -95,7 +174,7 @@ def do_it(context, type_k, pro_v, pro_e, radius_k, res_k, radius_e, res_e, smoot
 #           )
 def copyBmesh(src, sca, rot, loc):
     source = src.copy()
-    start_index = len(list_vert)
+    start_index = len(LIST_VERT)
     
     # transform
     source.transform(matrix=sca)
@@ -103,12 +182,12 @@ def copyBmesh(src, sca, rot, loc):
     source.transform(matrix=m)
 
     for v in source.verts:
-        list_vert.append((v.co.x,v.co.y,v.co.z))
+        LIST_VERT.append((v.co.x,v.co.y,v.co.z))
     for f in source.faces:
         if len(f.verts) == 3:
-            list_face.append([f.verts[0].index+start_index,f.verts[1].index+start_index,f.verts[2].index+start_index])
+            LIST_FACE.append([f.verts[0].index+start_index,f.verts[1].index+start_index,f.verts[2].index+start_index])
         elif len(f.verts) == 4:
-            list_face.append([f.verts[0].index+start_index,f.verts[1].index+start_index,f.verts[2].index+start_index,f.verts[3].index+start_index])
+            LIST_FACE.append([f.verts[0].index+start_index,f.verts[1].index+start_index,f.verts[2].index+start_index,f.verts[3].index+start_index])
 
 
 # Function to create the hull for knots of a input object/tree
@@ -141,11 +220,11 @@ def createKnots(data, type_k, pro_v, radius, res_k):
     for i in range(0, len(listVertices)):
         counter += 1
         if (pro_v):
-            bw = listVertices[i].bevel_weight
+            bw = data[3][i]
         else:
             bw = 1.0
         if (bw != 0.0):
-            lc = listVertices[i].co
+            lc = listVertices[i]
             v = om * lc
             # Scaling matrix
             sca = Matrix.Scale(1.0*bw, 4, (0.0, 0.0, 1.0)) * Matrix.Scale(1.0*bw, 4, (0.0, 1.0, 0.0)) * Matrix.Scale(1.0*bw, 4, (1.0, 0.0, 0.0))
@@ -176,8 +255,8 @@ def createEdges(data, pro_e, radius_k, radius_e, res_e):
     for edge in data[1]:
         
         # Get coordinates of vertices of the edge
-        vecA = om * data[0][edge.verts[0].index].co
-        vecB = om * data[0][edge.verts[1].index].co
+        vecA = om * data[0][edge[0]]
+        vecB = om * data[0][edge[1]]
 
         # If the two vertices are not equal
         if ((vecA - vecB).length > 0):
@@ -212,14 +291,14 @@ def createEdges(data, pro_e, radius_k, radius_e, res_e):
             # Copy model bMesh to target bMesh        
             copyBmesh(src, sca, rot, loc)
 
-            while ((len(list_edge_connect)-1 < edge.verts[0].index) or (len(list_edge_connect)-1 < edge.verts[1].index)):
-                list_edge_connect.append([])          
+            while ((len(LIST_EDGE_CONNECT)-1 < edge[0]) or (len(LIST_EDGE_CONNECT)-1 < edge[1])):
+                LIST_EDGE_CONNECT.append([])          
 
-            for i in range(len(list_vert)-(2*res_e),len(list_vert)):
-                if (Vector(list_vert[i])-vecA).length < (Vector(list_vert[i])-vecB).length:
-                    list_edge_connect[edge.verts[0].index].append(i)
+            for i in range(len(LIST_VERT)-(2*res_e),len(LIST_VERT)):
+                if (Vector(LIST_VERT[i])-vecA).length < (Vector(LIST_VERT[i])-vecB).length:
+                    LIST_EDGE_CONNECT[edge[0]].append(i)
                 else:
-                    list_edge_connect[edge.verts[1].index].append(i)
+                    LIST_EDGE_CONNECT[edge[1]].append(i)
 
     # free memory		    
     src.free()
@@ -238,11 +317,11 @@ class dmh_add(bpy.types.Operator):
 
     def update_type_k(self, context):
         if self.type_k == "ICO":
-            self.res_k = 1
+            self.res_k = 2
         elif self.type_k == "CUBE":
             self.res_k = 0
         elif self.type_k == "UV":
-            self.res_k = 4
+            self.res_k = 8
 
     def update_res_k(self, context):
         min = 0
@@ -264,29 +343,75 @@ class dmh_add(bpy.types.Operator):
         if self.radius_e > self.radius_k:
             self.radius_e=self.radius_k
 
-    type_k = EnumProperty(items=knot_types, default="UV", name="Knot-Type", update=update_type_k)
-    pro_v = BoolProperty(name="Knot PVR", default=False)
-    pro_e = BoolProperty(name="Edge PVR", default=False)
-    radius_k = FloatProperty(name="Knot-Radius", default=0.1, min=0.001, max=100.0,update=update_radius_k)
-    res_k = IntProperty(name="Knot-Resolution", default=8, min=0, max=128, update=update_res_k)
-    radius_e = FloatProperty(name="Edge-Radius", default=0.03, min=0.001, max=100.0,update=update_radius_e)
-    res_e = IntProperty(name="Edge-Resolution", default=6, min=3, max=128)
-    smooth = BoolProperty(name="Smooth-Shading", default=False)
-
+    type_k = EnumProperty(items=knot_types, default=DEFAULT_TYPE_K, name="Knot-Type", update=update_type_k)
+    pro_v = BoolProperty(name="Knot PVR", default=DEFAULT_PRO_V)
+    pro_e = BoolProperty(name="Edge PVR", default=DEFAULT_PRO_E)
+    radius_k = FloatProperty(name="Knot-Radius", default=DEFAULT_RADIUS_K, min=0.001, max=100.0,update=update_radius_k)
+    res_k = IntProperty(name="Knot-Resolution", default=DEFAULT_RES_K, min=0, max=128, update=update_res_k)
+    radius_e = FloatProperty(name="Edge-Radius", default=DEFAULT_RADIUS_E, min=0.001, max=100.0,update=update_radius_e)
+    res_e = IntProperty(name="Edge-Resolution", default=DEFAULT_RES_E, min=3, max=128)
+    smooth = BoolProperty(name="Smooth-Shading", default=DEFAULT_SMOOTH)
+    
     def execute(self, context):
+        ACTUAL_STATE = DEFAULT_ACTUAL_STATE
+        
+        if (ACTUAL_STATE == "NEW"):
+            self.type_k = DEFAULT_TYPE_K
+            self.pro_v = DEFAULT_PRO_V
+            self.pro_e = DEFAULT_PRO_E
+            self.radius_k = DEFAULT_RADIUS_K
+            self.res_k = DEFAULT_RES_K
+            self.radius_e = DEFAULT_RADIUS_E
+            self.res_e = DEFAULT_RES_E
+            self.smooth = DEFAULT_SMOOTH
+
+        if (ACTUAL_STATE == "IMPORT"):        
+           
+            self.type_k = IMPORT_TYPE_K
+            self.pro_v = IMPORT_PRO_V
+            self.pro_e = IMPORT_PRO_E
+            self.radius_k = IMPORT_RADIUS_K
+            self.res_k = IMPORT_RES_K
+            self.radius_e = IMPORT_RADIUS_E
+            self.res_e = IMPORT_RES_E
+            self.smooth = IMPORT_SMOOTH
+            
+            dmh_tree_mesh = bpy.data.meshes.new('dmh_tree')
+            dmh_tree_mesh.from_pydata(IMPORT_DATA[0], IMPORT_DATA[1], [])
+            dmh_tree_obj = bpy.data.objects.new("DMH-TREE", dmh_tree_mesh)
+            bpy.context.scene.objects.link(dmh_tree_obj)
+            bpy.ops.object.select_all(action='DESELECT')
+            bpy.context.scene.objects.active = bpy.data.objects[dmh_tree_obj.name]
+            bpy.data.objects[dmh_tree_obj.name].select = True
+            bpy.ops.transform.translate(value=IMPORT_DATA[2])
+            for i in range(0, len(IMPORT_DATA[3])):
+                bpy.context.selected_objects[0].data.vertices[i].bevel_weight = IMPORT_DATA[3][i]
+                
         if (len(bpy.context.selected_objects)==1):
             obj = bpy.context.selected_objects[0]
             om = obj.matrix_world
-            v = obj.data.vertices
+            v = [vec.co for vec in obj.data.vertices]
             bm = bmesh.new()
             bm.from_mesh(obj.data)
-            e = bm.edges
-            data = [v,e,om,self.res_e]
+            e = []
+            for edge in bm.edges:
+                e.append([edge.verts[0].index, edge.verts[1].index])
+            bw = [vec.bevel_weight for vec in obj.data.vertices]
+            data = [v,e,om,bw]
 
-            new_obj = do_it(context, self.type_k, self.pro_v, self.pro_e,
-                self.radius_k, self.res_k, self.radius_e, self.res_e, self.smooth, data)
+            bpy.types.Scene.type_k = self.type_k
+            bpy.types.Scene.pro_v = self.pro_v
+            bpy.types.Scene.pro_e = self.pro_e
+            bpy.types.Scene.res_k = self.res_k
+            bpy.types.Scene.radius_k = self.radius_k
+            bpy.types.Scene.res_e = self.res_e
+            bpy.types.Scene.radius_e = self.radius_e
+            bpy.types.Scene.smooth = self.smooth
+            bpy.types.Scene.data = data
+            
+            new_obj = do_it(context)
         else:
-            self.report({'INFO'}, 'No active object.')
+            self.report({'INFO'}, 'No active object or to many selected objects.')
         return {'FINISHED'}
  
 def menu_func(self, context):
@@ -296,11 +421,7 @@ def menu_func(self, context):
 
 class DMHImport(bpy.types.Operator, ImportHelper):
     """Import .dmh file Operator"""
-
-    #: Name of function for calling the nif export operator.
     bl_idname = "i.dmh"
-
-    #: How the nif import operator is labelled in the user interface.
     bl_label = "Import DMH"
 
     def execute(self, context):
@@ -311,11 +432,7 @@ class DMHImport(bpy.types.Operator, ImportHelper):
 
 class DMHExport(bpy.types.Operator, ExportHelper):
     """Export .dmh file Operator"""
-
-    #: Name of function for calling the nif export operator.
     bl_idname = "e.dmh"
-
-    #: How the nif import operator is labelled in the user interface.
     bl_label = "Export DMH"
 
     filename_ext = ".dmh"
