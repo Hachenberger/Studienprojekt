@@ -107,6 +107,18 @@ def make_obj(smooth, data):
             LIST_VERT.append((vec_v.x,vec_v.y,vec_v.z))
             LIST_EDGE_CONNECT[i].append(len(LIST_VERT)-1)
 
+    if bpy.types.Scene.pro_e:
+        for i in range(0,len(LIST_EDGE_CONNECT)):
+            if data[3][i] < 0.1:
+                factor = 0.9
+            else:
+                factor = 1 - data[3][i]
+            for x in range(0,len(LIST_EDGE_CONNECT[i])):
+                transl = Vector(data[2]*data[0][i]) - Vector(LIST_VERT[LIST_EDGE_CONNECT[i][x]])
+                transl = Vector((transl.x*factor,transl.y*factor,transl.z*factor)) 
+                new_vec = Vector(LIST_VERT[LIST_EDGE_CONNECT[i][x]]) + transl
+                LIST_VERT[LIST_EDGE_CONNECT[i][x]] = (new_vec.x,new_vec.y,new_vec.z) 
+
     print("Vertices: ", len(LIST_VERT))
     print("Faces: ", len(LIST_FACE))
     dmh_mesh = bpy.data.meshes.new('dmh')
@@ -336,12 +348,12 @@ class dmh_add(bpy.types.Operator):
             self.res_k = min
 
     def update_radius_k(self,context):
-        if self.radius_k < self.radius_e:
-            self.radius_k=self.radius_e
+        if self.radius_k < self.radius_e*1.25:
+            self.radius_k=self.radius_e*1.25
 
     def update_radius_e(self,context):
-        if self.radius_e > self.radius_k:
-            self.radius_e=self.radius_k
+        if self.radius_e > self.radius_k*0.8:
+            self.radius_e=self.radius_k*0.8
 
     type_k = EnumProperty(items=knot_types, default=DEFAULT_TYPE_K, name="Knot-Type", update=update_type_k)
     pro_v = BoolProperty(name="Knot PVR", default=DEFAULT_PRO_V)
@@ -351,9 +363,10 @@ class dmh_add(bpy.types.Operator):
     radius_e = FloatProperty(name="Edge-Radius", default=DEFAULT_RADIUS_E, min=0.001, max=100.0,update=update_radius_e)
     res_e = IntProperty(name="Edge-Resolution", default=DEFAULT_RES_E, min=3, max=128)
     smooth = BoolProperty(name="Smooth-Shading", default=DEFAULT_SMOOTH)
-    
+      
     def execute(self, context):
-        ACTUAL_STATE = DEFAULT_ACTUAL_STATE
+        
+        ACTUAL_STATE = DEFAULT_ACTUAL_STATE      
         
         if (ACTUAL_STATE == "NEW"):
             self.type_k = DEFAULT_TYPE_K
@@ -388,6 +401,9 @@ class dmh_add(bpy.types.Operator):
                 bpy.context.selected_objects[0].data.vertices[i].bevel_weight = IMPORT_DATA[3][i]
                 
         if (len(bpy.context.selected_objects)==1):
+            global DEFAULT_ACTUAL_STATE
+            DEFAULT_ACTUAL_STATE ="RUN"
+            ACTUAL_STATE == "RUN" 
             obj = bpy.context.selected_objects[0]
             om = obj.matrix_world
             v = [vec.co for vec in obj.data.vertices]
@@ -410,6 +426,7 @@ class dmh_add(bpy.types.Operator):
             bpy.types.Scene.data = data
             
             new_obj = do_it(context)
+            
         else:
             self.report({'INFO'}, 'No active object or to many selected objects.')
         return {'FINISHED'}
