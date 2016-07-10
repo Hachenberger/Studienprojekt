@@ -1,3 +1,10 @@
+bl_info = {
+    "name": "Wireframe cover / Drahtmodellhuellen (DMH)",
+    "description": "Addon for covering a Wireframe with a Mesh",
+    "category": "Add Mesh",
+    "author": "Kay Hachenberger, Bersant Kabashi"
+}
+
 import bpy
 import bmesh
 from math import *
