@@ -12,67 +12,81 @@ import os
 from bpy_extras.io_utils import ImportHelper, ExportHelper
 
 class dmh_options():
+    """class to save the AddOn-options
 
+    """ 
+    # Define and initalize variables
     LIST_VERT = []
     LIST_FACE = []
     LIST_EDGE_CONNECT = [[]]
-    
-    #data = []
 
-    DEFAULT_TYPE_K = "UV"
-    DEFAULT_PRO_V = False
-    DEFAULT_PRO_E = False
-    DEFAULT_HIDE_K = False
-    DEFAULT_RADIUS_K = 0.1
-    DEFAULT_RES_K = 8
-    DEFAULT_RADIUS_E = 0.03
-    DEFAULT_RES_E = 6
+    DEFAULT_KNOT_TYPE = "UV"
+    DEFAULT_VERTEX_PVR = False
+    DEFAULT_EDGE_PVR = False
+    DEFAULT_HIDE_KNOTS = False
+    DEFAULT_KNOT_RADIUS = 0.1
+    DEFAULT_KNOT_RESOLUTION = 8
+    DEFAULT_EDGE_RADIUS = 0.03
+    DEFAULT_EDGE_RESOLUTION = 6
     DEFAULT_SMOOTH = False
     DEFAULT_IMPORT = False
     DEFAULT_ACTUAL_STATE = "NEW"
     IMPORT_DATA = []
-    IMPORT_TYPE_K = "UV"
-    IMPORT_PRO_V = False
-    IMPORT_PRO_E = False
-    IMPORT_HIDE_K = False
-    IMPORT_RADIUS_K = 0.1
-    IMPORT_RES_K = 8
-    IMPORT_RADIUS_E = 0.03
-    IMPORT_RES_E = 6
+    IMPORT_knot_type = "UV"
+    IMPORT_VERTEX_PVR = False
+    IMPORT_EDGE_PVR = False
+    IMPORT_HIDE_KNOTS = False
+    IMPORT_KNOT_RADIUS = 0.1
+    IMPORT_KNOT_RESOLUTION = 8
+    IMPORT_EDGE_RADIUS = 0.03
+    IMPORT_EDGE_RESOLUTION = 6
     IMPORT_SMOOTH = False
 
     def __init__(self):
         print("Inititalising dmh_options...")
-        
+    
+    # setter function    
     def set_import(self,
                    import_data,
-                   import_type_k,
-                   import_pro_v,
-                   import_pro_e,
-                   import_hide_k,
-                   import_res_k,
-                   import_radius_k,
-                   import_res_e,
-                   import_radius_e,
+                   import_knot_type,
+                   import_vertex_pvr,
+                   import_edge_pvr,
+                   import_hide_knots,
+                   import_knot_resolution,
+                   import_knot_radius,
+                   import_edge_resolution,
+                   import_edge_radius,
                    import_smooth
                    ):
         self.IMPORT_DATA = import_data
-        self.IMPORT_TYPE_K = import_type_k
-        self.IMPORT_PRO_V = import_pro_v
-        self.IMPORT_PRO_E = import_pro_e
-        self.IMPORT_HIDE_K = import_hide_k
-        self.IMPORT_RES_K = import_res_k
-        self.IMPORT_RADIUS_K = import_radius_k
-        self.IMPORT_RES_E = import_res_e
-        self.IMPORT_RADIUS_E = import_radius_e
+        self.IMPORT_knot_type = import_knot_type
+        self.IMPORT_VERTEX_PVR = import_vertex_pvr
+        self.IMPORT_EDGE_PVR = import_edge_pvr
+        self.IMPORT_HIDE_KNOTS = import_hide_knots
+        self.IMPORT_KNOT_RESOLUTION = import_knot_resolution
+        self.IMPORT_KNOT_RADIUS = import_knot_radius
+        self.IMPORT_EDGE_RESOLUTION = import_edge_resolution
+        self.IMPORT_EDGE_RADIUS = import_edge_radius
         self.IMPORT_SMOOTH = import_smooth
         
-def load_data(fileName):
+def import_data(fileName):
+    """import data from a '.dmh'-File
+
+    :param fileName: Path and name of file 
+    :type fileName: str. 
+
+    :returns: none -- importing data and saving them in bpy.types.Scene.dmh 
+
+    """ 
+    options = bpy.types.Scene.dmh
+
+    # open file and load data
     f = open(fileName,'r')
     data_load = json.load(f)
     data = data_load[0]
     
-    bpy.types.Scene.dmh.set_import([data[0],data[1],data[2],data[3]],
+    # store data in options
+    options.set_import([data[0],data[1],data[2],data[3]],
                                    data[4],
                                    data[5],
                                    data[6],
@@ -84,48 +98,65 @@ def load_data(fileName):
                                    data[12]
                                    )  
     
-    bpy.types.Scene.dmh.DEFAULT_ACTUAL_STATE = "IMPORT"
+    # create model and change state
+    options.DEFAULT_ACTUAL_STATE = "IMPORT"
     bpy.ops.mesh.dmh_add()
-    bpy.types.Scene.dmh.DEFAULT_ACTUAL_STATE = "NEW"
+    options.DEFAULT_ACTUAL_STATE = "NEW"
 
-def save_data(fileName):
+def export_data(fileName):
+    """export data to a '.dmh'-File
+
+    :param fileName: Path and name of file 
+    :type fileName: str. 
+    :returns: none -- exporting all data stored in bpy.types.Scene.dmh to file in json format
+
+    """ 
+    options = bpy.types.Scene.dmh
+    
+    # open file and store date
     f = open(fileName,'w')
     
     list_vertices = []
-    for v in bpy.types.Scene.dmh.data[0]:
-        list_vertices.append([v[0],v[1],v[2]]) 
-        
-    options = bpy.types.Scene.dmh    
+    for v in options.data[0]:
+        list_vertices.append([v[0],v[1],v[2]])    
     
     world_pos = [options.data[2][0][3], options.data[2][1][3], options.data[2][2][3]]
       
     wireframe = [
                 list_vertices, 
                 options.data[1], world_pos, options.data[3],
-                options.type_k,
-                options.pro_v,
-                options.pro_e,
-                options.hide_k,
-                options.res_k,
-                options.radius_k,
-                options.res_e,
-                options.radius_e,
+                options.knot_type,
+                options.vertex_pvr,
+                options.edge_pvr,
+                options.hide_knots,
+                options.knot_resolution,
+                options.knot_radius,
+                options.edge_resolution,
+                options.edge_radius,
                 options.smooth
                 ]
 
     data = [wireframe]
     json.dump(data, f)
 
-def make_obj(data):
-    options = bpy.types.Scene.dmh  
-   
+def make_obj():
+    """creating an object by using all data stored in options
+
+    :returns: none -- exporting all data stored in bpy.types.Scene.dmh to file in json format
+
+    """ 
+    options = bpy.types.Scene.dmh
+    data = options.data  
+
+    # For the end points add the original knot vertice to list for correct modelling in case that the knots should be hided    
     for i in range(0,len(options.LIST_EDGE_CONNECT)):
-        if len(options.LIST_EDGE_CONNECT[i]) == options.res_e:
+        if len(options.LIST_EDGE_CONNECT[i]) == options.edge_resolution:
             vec_v = data[2]*data[0][i]
             options.LIST_VERT.append((vec_v.x,vec_v.y,vec_v.z))
             options.LIST_EDGE_CONNECT[i].append(len(options.LIST_VERT)-1)
 
-    if options.pro_e:
+    # in case of edge_pvr scale ends of edges
+    if options.edge_pvr:
         for i in range(0,len(options.LIST_EDGE_CONNECT)):
             if data[3][i] < 0.1:
                 factor = 0.9
@@ -137,6 +168,7 @@ def make_obj(data):
                 new_vec = Vector(options.LIST_VERT[options.LIST_EDGE_CONNECT[i][x]]) + transl
                 options.LIST_VERT[options.LIST_EDGE_CONNECT[i][x]] = (new_vec.x,new_vec.y,new_vec.z) 
 
+    # creating object
     print("Vertices: ", len(options.LIST_VERT))
     print("Faces: ", len(options.LIST_FACE))
     dmh_mesh = bpy.data.meshes.new('dmh')
@@ -146,12 +178,14 @@ def make_obj(data):
     bm.from_mesh(dmh_mesh)
     bm.verts.ensure_lookup_table()
 
+    # connecting edges
     for i in range(0,len(options.LIST_EDGE_CONNECT)):
         if len(options.LIST_EDGE_CONNECT[i]) > 3:
             if (data[3][i] == 0.0):
                 bmesh.ops.convex_hull(bm,input=[bm.verts[d] for d in options.LIST_EDGE_CONNECT[i]])    
     bm.to_mesh(dmh_mesh)
     
+    # finish object creating and choose shading
     bm.free
     dmh_obj = bpy.data.objects.new("DMH", dmh_mesh)
     bpy.context.scene.objects.link(dmh_obj)
@@ -163,7 +197,13 @@ def make_obj(data):
     else:
         bpy.ops.object.shade_flat()
 
-def do_it(context):
+def main_function(context):
+    """main function of the AddOn
+
+    :returns: 'FINISHED'
+
+    """ 
+
     # Debug Info
     zeit = time.time()
     print("Modelling Hull")     
@@ -176,28 +216,33 @@ def do_it(context):
 
     # Creating knots and edges
     
-    createEdges(options.data, options.pro_e, options.radius_k, options.radius_e, options.res_e)
-    createKnots(options.data, options.type_k, options.pro_v, options.hide_k, options.radius_k, options.res_k)
+    createEdges(options.data, options.edge_pvr, options.knot_radius, options.edge_radius, options.edge_resolution)
+    createKnots(options.data, options.knot_type, options.vertex_pvr, options.hide_knots, options.knot_radius, options.knot_resolution)
 
-
-    make_obj(options.data)
+    make_obj()
 
     # Debug Info
     print("Finished in ", time.time() - zeit, " seconds.\n")
         
     return {'FINISHED'}
 
-# Function to transform a source bMesh and copy the result to a target bMesh
-# copyBmesh( 
-#            source bMesh,
-#            target bMesh,
-#            scaling matrix,
-#            rotation matrix,
-#            translation matrix
-#           )
 def copyBmesh(src, sca, rot, loc):
+    """copying vertices' coordinates and faces from a source Bmesh to AddOn options
+
+    :param src: source Bmesh that will be copied 
+    :type src: bmesh
+    :param sca: scaling matrix that will be used for transformation of the source Bmesh  
+    :type sca: 4x4-matrix
+    :param rot: rotation matrix that will be used for transformation of the source Bmesh  
+    :type rot: 4x4-matrix
+    :param loc: translationn vector that will be used for transformation of the source Bmesh  
+    :type loc: 4D-vector
+    :param src: source Bmesh that will be copied 
+    :type src: bmesh
+    :returns: none -- exporting all data stored in bpy.types.Scene.dmh to file in json format
+
+    """ 
     options = bpy.types.Scene.dmh
-    
     source = src.copy()
     start_index = len(options.LIST_VERT)
     
@@ -206,6 +251,7 @@ def copyBmesh(src, sca, rot, loc):
     m = loc * rot
     source.transform(matrix=m)
 
+    # copying data
     for v in source.verts:
         options.LIST_VERT.append((v.co.x,v.co.y,v.co.z))
     for f in source.faces:
@@ -220,22 +266,38 @@ def copyBmesh(src, sca, rot, loc):
 #               input object/tree,
 #               target bMesh
 #               )
-def createKnots(data, type_k, pro_v, hide_k, radius, res_k):
+def createKnots(data, knot_type, vertex_pvr, hide_knots, radius, knot_resolution):
+    """modelling knots
+
+    :param src: source Bmesh that will be copied 
+    :type src: bmesh
+    :param sca: scaling matrix that will be used for transformation of the source Bmesh  
+    :type sca: 4x4-matrix
+    :param rot: rotation matrix that will be used for transformation of the source Bmesh  
+    :type rot: 4x4-matrix
+    :param loc: translationn vector that will be used for transformation of the source Bmesh  
+    :type loc: 4D-vector
+    :param src: source Bmesh that will be copied 
+    :type src: bmesh
+    :returns: none -- exporting all data stored in bpy.types.Scene.dmh to file in json format
+
+    """ 
+
     # get world matrix and list of vertices of input object  
     om = data[2]
     listVertices = data[0]
 
     # Debug Info
     print("Starting to create ",len(listVertices) , " bMesh Knots")
-    print("Knot-Type: ", type_k)
+    print("Knot-Type: ", knot_type)
     
     # Create one model bMesh for knots        
     src = bmesh.new()
-    if (type_k=="UV"):
-        bmesh.ops.create_uvsphere(src, u_segments = res_k, v_segments = res_k, diameter = radius)
-    elif (type_k=="ICO"):
-        bmesh.ops.create_icosphere(src, subdivisions = res_k, diameter = radius)
-    elif (type_k=="CUBE"):
+    if (knot_type=="UV"):
+        bmesh.ops.create_uvsphere(src, u_segments = knot_resolution, v_segments = knot_resolution, diameter = radius)
+    elif (knot_type=="ICO"):
+        bmesh.ops.create_icosphere(src, subdivisions = knot_resolution, diameter = radius)
+    elif (knot_type=="CUBE"):
         bmesh.ops.create_cube(src, size = radius*2)
 
     # Debug Info
@@ -244,8 +306,8 @@ def createKnots(data, type_k, pro_v, hide_k, radius, res_k):
     # For every knot    
     for i in range(0, len(listVertices)):
         counter += 1
-        if (not (hide_k and (len(bpy.types.Scene.dmh.LIST_EDGE_CONNECT[i]) == bpy.types.Scene.dmh.res_e * 2))):
-            if (pro_v):
+        if (not (hide_knots and (len(bpy.types.Scene.dmh.LIST_EDGE_CONNECT[i]) == bpy.types.Scene.dmh.edge_resolution * 2))):
+            if (vertex_pvr):
                 bw = data[3][i]
             else:
                 bw = 1.0
@@ -263,21 +325,32 @@ def createKnots(data, type_k, pro_v, hide_k, radius, res_k):
 
     # Free memory
     src.free()
+   
+def createEdges(data, edge_pvr, knot_radius, edge_radius, edge_resolution):
+    """modelling knots
 
-# Function to create the hull for edges of a input object/tree
-# createEdges( 
-#               input object/tree,
-#               target bMesh
-#               )    
-def createEdges(data, pro_e, radius_k, radius_e, res_e):
+    :param data: list of verticed, edges, world matrix and bevel weights 
+    :type data: list
+    :param edge_pvr: option to use edge Pro-Vertex-Radius  
+    :type edge_pvr: boolean
+    :param knot_radius: radius for the knots  
+    :type knot_radius: float
+    :param edge_radius: radius for the edges  
+    :type edge_radius: float
+    :param edge_resolution: resolution for the edges
+    :type edge_resolution: integer
+    :returns: none -- calling copyBmesh()
+
+    """ 
+
     options = bpy.types.Scene.dmh 
-    
+
     # transform input object/tree into bmesh
     om = data[2]
        
     # Create one model bMesh for edges
     src = bmesh.new()
-    bmesh.ops.create_cone(src, segments=res_e, diameter1=radius_e, diameter2=radius_e, depth=1.0)
+    bmesh.ops.create_cone(src, segments=edge_resolution, diameter1=edge_radius, diameter2=edge_radius, depth=1.0)
 
     # For every knot 
     for edge in data[1]:
@@ -290,10 +363,10 @@ def createEdges(data, pro_e, radius_k, radius_e, res_e):
         if ((vecA - vecB).length > 0):
 
             # calculate the distance between the two vertices            
-            if radius_k-radius_e < 2*radius_e:
-                dist = ((vecB) - (vecA)).length - (radius_k-radius_e)
+            if knot_radius-edge_radius < 2*edge_radius:
+                dist = ((vecB) - (vecA)).length - (knot_radius-edge_radius)
             else:
-                dist = ((vecB) - (vecA)).length - (2*radius_e)
+                dist = ((vecB) - (vecA)).length - (2*edge_radius)
 
             # calculate the middlepoint coordinates
             xLength = vecB[0] - vecA[0]
@@ -319,10 +392,11 @@ def createEdges(data, pro_e, radius_k, radius_e, res_e):
             # Copy model bMesh to target bMesh        
             copyBmesh(src, sca, rot, loc)
 
+            # Allocate vertices to the knot that they belong to
             while ((len(options.LIST_EDGE_CONNECT)-1 < edge[0]) or (len(options.LIST_EDGE_CONNECT)-1 < edge[1])):
                 options.LIST_EDGE_CONNECT.append([])          
 
-            for i in range(len(options.LIST_VERT)-(2*res_e),len(options.LIST_VERT)):
+            for i in range(len(options.LIST_VERT)-(2*edge_resolution),len(options.LIST_VERT)):
                 if (Vector(options.LIST_VERT[i])-vecA).length < (Vector(options.LIST_VERT[i])-vecB).length:
                     options.LIST_EDGE_CONNECT[edge[0]].append(i)
                 else:
@@ -334,6 +408,11 @@ def createEdges(data, pro_e, radius_k, radius_e, res_e):
 
 
 class dmh_add(bpy.types.Operator):
+    """Operator class (bpy.types.Operator)
+
+    :returns: 'FINISHED'
+
+    """ 
     '''Add a Wireframe Cover'''
     bl_idname = "mesh.dmh_add"
     bl_label = "Add a Wireframe Cover"
@@ -347,44 +426,49 @@ class dmh_add(bpy.types.Operator):
     ("CUBE", "Cube", "", 3),
     ]
 
-    def update_type_k(self, context):
-        if self.type_k == "ICO":
-            self.res_k = 2
-        elif self.type_k == "CUBE":
-            self.res_k = 0
-        elif self.type_k == "UV":
-            self.res_k = 8
+    # taking care of right resolutions for every knot type
+    def update_knot_type(self, context):
+        if self.knot_type == "ICO":
+            self.knot_resolution = 2
+        elif self.knot_type == "CUBE":
+            self.knot_resolution = 0
+        elif self.knot_type == "UV":
+            self.knot_resolution = 8
 
-    def update_res_k(self, context):
+    # taking care of right resolutions for every knot type
+    def update_knot_resolution(self, context):
         min = 0
         print(self)
-        if self.type_k == "ICO":
+        if self.knot_type == "ICO":
             min = 1
-        elif self.type_k == "CUBE":
-            self.res_k = 0
-        elif self.type_k == "UV":
+        elif self.knot_type == "CUBE":
+            self.knot_resolution = 0
+        elif self.knot_type == "UV":
             min = 3
-        if self.res_k < min:
-            self.res_k = min
+        if self.knot_resolution < min:
+            self.knot_resolution = min
 
-    def update_radius_k(self,context):
-        if self.radius_k < self.radius_e*1.25:
-            self.radius_k=self.radius_e*1.25
+    # taking care of minimum knot radius
+    def update_knot_radius(self,context):
+        if self.knot_radius < self.edge_radius*1.25:
+            self.knot_radius=self.edge_radius*1.25
 
-    def update_radius_e(self,context):
-        if self.radius_e > self.radius_k*0.8:
-            self.radius_e=self.radius_k*0.8
+    # taking care of maximum edge radius
+    def update_edge_radius(self,context):
+        if self.edge_radius > self.knot_radius*0.8:
+            self.edge_radius=self.knot_radius*0.8
 
     options = bpy.types.Scene.dmh 
 
-    type_k = EnumProperty(items=knot_types, default=options.DEFAULT_TYPE_K, name="Knot-Type", update=update_type_k)
-    pro_v = BoolProperty(name="Knot PVR", default=options.DEFAULT_PRO_V)
-    pro_e = BoolProperty(name="Edge PVR", default=options.DEFAULT_PRO_E)
-    hide_k = BoolProperty(name="Hide knots with 2 edges", default=options.DEFAULT_HIDE_K)
-    radius_k = FloatProperty(name="Knot-Radius", default=options.DEFAULT_RADIUS_K, min=0.001, max=100.0,update=update_radius_k)
-    res_k = IntProperty(name="Knot-Resolution", default=options.DEFAULT_RES_K, min=0, max=128, update=update_res_k)
-    radius_e = FloatProperty(name="Edge-Radius", default=options.DEFAULT_RADIUS_E, min=0.001, max=100.0,update=update_radius_e)
-    res_e = IntProperty(name="Edge-Resolution", default=options.DEFAULT_RES_E, min=3, max=128)
+    # creating properties
+    knot_type = EnumProperty(items=knot_types, default=options.DEFAULT_KNOT_TYPE, name="Knot-Type", update=update_knot_type)
+    vertex_pvr = BoolProperty(name="Knot PVR", default=options.DEFAULT_VERTEX_PVR)
+    edge_pvr = BoolProperty(name="Edge PVR", default=options.DEFAULT_EDGE_PVR)
+    hide_knots = BoolProperty(name="Hide knots with 2 edges", default=options.DEFAULT_HIDE_KNOTS)
+    knot_radius = FloatProperty(name="Knot-Radius", default=options.DEFAULT_KNOT_RADIUS, min=0.001, max=100.0,update=update_knot_radius)
+    knot_resolution = IntProperty(name="Knot-Resolution", default=options.DEFAULT_KNOT_RESOLUTION, min=0, max=128, update=update_knot_resolution)
+    edge_radius = FloatProperty(name="Edge-Radius", default=options.DEFAULT_EDGE_RADIUS, min=0.001, max=100.0,update=update_edge_radius)
+    edge_resolution = IntProperty(name="Edge-Resolution", default=options.DEFAULT_EDGE_RESOLUTION, min=3, max=128)
     smooth = BoolProperty(name="Smooth-Shading", default=options.DEFAULT_SMOOTH)
       
     def execute(self, context):
@@ -393,29 +477,31 @@ class dmh_add(bpy.types.Operator):
         
         ACTUAL_STATE = options.DEFAULT_ACTUAL_STATE      
         
+        # load default values when creating new dmh
         if (ACTUAL_STATE == "NEW"):
-            self.type_k = options.DEFAULT_TYPE_K
-            self.pro_v = options.DEFAULT_PRO_V
-            self.pro_e = options.DEFAULT_PRO_E
-            self.hide_k = options.DEFAULT_HIDE_K
-            self.radius_k = options.DEFAULT_RADIUS_K
-            self.res_k = options.DEFAULT_RES_K
-            self.radius_e = options.DEFAULT_RADIUS_E
-            self.res_e = options.DEFAULT_RES_E
+            self.knot_type = options.DEFAULT_KNOT_TYPE
+            self.vertex_pvr = options.DEFAULT_VERTEX_PVR
+            self.edge_pvr = options.DEFAULT_EDGE_PVR
+            self.hide_knots = options.DEFAULT_HIDE_KNOTS
+            self.knot_radius = options.DEFAULT_KNOT_RADIUS
+            self.knot_resolution = options.DEFAULT_KNOT_RESOLUTION
+            self.edge_radius = options.DEFAULT_EDGE_RADIUS
+            self.edge_resolution = options.DEFAULT_EDGE_RESOLUTION
             self.smooth = options.DEFAULT_SMOOTH
 
+        # load default values when importing dmh
         if (ACTUAL_STATE == "IMPORT"):        
-           
-            self.type_k = options.IMPORT_TYPE_K
-            self.pro_v = options.IMPORT_PRO_V
-            self.pro_e = options.IMPORT_PRO_E
-            self.hide_k = options.IMPORT_HIDE_K
-            self.radius_k = options.IMPORT_RADIUS_K
-            self.res_k = options.IMPORT_RES_K
-            self.radius_e = options.IMPORT_RADIUS_E
-            self.res_e = options.IMPORT_RES_E
+            self.knot_type = options.IMPORT_knot_type
+            self.vertex_pvr = options.IMPORT_VERTEX_PVR
+            self.edge_pvr = options.IMPORT_EDGE_PVR
+            self.hide_knots = options.IMPORT_HIDE_KNOTS
+            self.knot_radius = options.IMPORT_KNOT_RADIUS
+            self.knot_resolution = options.IMPORT_KNOT_RESOLUTION
+            self.edge_radius = options.IMPORT_EDGE_RADIUS
+            self.edge_resolution = options.IMPORT_EDGE_RESOLUTION
             self.smooth = options.IMPORT_SMOOTH
             
+            # creating wireframe from imported data 
             dmh_tree_mesh = bpy.data.meshes.new('dmh_tree')
             dmh_tree_mesh.from_pydata(options.IMPORT_DATA[0], options.IMPORT_DATA[1], [])
             dmh_tree_obj = bpy.data.objects.new("DMH-TREE", dmh_tree_mesh)
@@ -432,6 +518,8 @@ class dmh_add(bpy.types.Operator):
             options.DEFAULT_ACTUAL_STATE ="RUN"
             ACTUAL_STATE == "RUN" 
             obj = bpy.context.selected_objects[0]
+
+            # loading data
             om = obj.matrix_world
             v = [vec.co for vec in obj.data.vertices]
             bm = bmesh.new()
@@ -442,41 +530,57 @@ class dmh_add(bpy.types.Operator):
             bw = [vec.bevel_weight for vec in obj.data.vertices]
             data = [v,e,om,bw]
 
-            options.type_k = self.type_k
-            options.pro_v = self.pro_v
-            options.pro_e = self.pro_e
-            options.hide_k = self.hide_k
-            options.res_k = self.res_k
-            options.radius_k = self.radius_k
-            options.res_e = self.res_e
-            options.radius_e = self.radius_e
+            # setting options
+            options.knot_type = self.knot_type
+            options.vertex_pvr = self.vertex_pvr
+            options.edge_pvr = self.edge_pvr
+            options.hide_knots = self.hide_knots
+            options.knot_resolution = self.knot_resolution
+            options.knot_radius = self.knot_radius
+            options.edge_resolution = self.edge_resolution
+            options.edge_radius = self.edge_radius
             options.smooth = self.smooth
             options.data = data
             
-            new_obj = do_it(context)
+            # execute main function
+            new_obj = main_function(context)
             
         else:
             self.report({'INFO'}, 'No active object or to many selected objects.')
         return {'FINISHED'}
  
 def menu_func(self, context):
+    """Menu function
+
+    :returns: none
+
+    """ 
+
     self.layout.operator("mesh.dmh_add", 
         text="Wireframe Cover", 
         icon='OUTLINER_OB_EMPTY')
 
 class DMHImport(bpy.types.Operator, ImportHelper):
-    """Import .dmh file Operator"""
+    """Operator class (bpy.types.Operator, ImportHelper)
+
+    :returns: 'FINISHED'
+
+    """ 
     bl_idname = "i.dmh"
     bl_label = "Import DMH"
 
     def execute(self, context):
         path = "Importing " + self.properties.filepath
         self.report({'INFO'}, path)
-        load_data(self.properties.filepath)
+        import_data(self.properties.filepath)
         return{'FINISHED'}
 
 class DMHExport(bpy.types.Operator, ExportHelper):
-    """Export .dmh file Operator"""
+    """Operator class (bpy.types.Operator, ExportHelper)
+
+    :returns: 'FINISHED'
+
+    """     
     bl_idname = "e.dmh"
     bl_label = "Export DMH"
 
@@ -486,26 +590,37 @@ class DMHExport(bpy.types.Operator, ExportHelper):
     def execute(self, context):
         path = "Exporting " + self.properties.filepath
         self.report({'INFO'}, path)
-        save_data(self.properties.filepath)
+        export_data(self.properties.filepath)
         return{'FINISHED'}
 
 def menu_func_import(self, context):
+    """Menu function
+
+    :returns: none
+
+    """ 
     self.layout.operator(
         DMHImport.bl_idname, text="DMH (.dmh)")
 
 def menu_func_export(self, context):
+    """Menu function
+
+    :returns: none
+
+    """ 
     self.layout.operator(
         DMHExport.bl_idname, text="DMH (.dmh)")
 
+# registering functions and classes to blender
 def register():
    bpy.utils.register_module(__name__)
    bpy.types.INFO_MT_add.prepend(menu_func)
    bpy.types.INFO_MT_file_import.append(menu_func_import)
    bpy.types.INFO_MT_file_export.append(menu_func_export)
- 
+
+# unregistering functions and classes from blender 
 def unregister():
     bpy.utils.unregister_module(__name__)
-    bpy.utils.register_module(ToolsPanel)
     bpy.types.INFO_MT_add.remove(menu_func)
     bpy.types.INFO_MT_file_import.remove(menu_func_import)
     bpy.types.INFO_MT_file_export.remove(menu_func_export)
