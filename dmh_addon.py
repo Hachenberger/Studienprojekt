@@ -188,7 +188,7 @@ def make_obj():
     # connecting edges
     for i in range(0,len(options.LIST_EDGE_CONNECT)):
         if len(options.LIST_EDGE_CONNECT[i]) > 3:
-            if (data[3][i] == 0.0):
+            if ((data[3][i] == 0.0) or (options.hide_knots)):
                 bmesh.ops.convex_hull(bm,input=[bm.verts[d] for d in options.LIST_EDGE_CONNECT[i]])    
     bm.to_mesh(dmh_mesh)
     
