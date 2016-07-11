@@ -568,11 +568,7 @@ def menu_func(self, context):
         icon='OUTLINER_OB_EMPTY')
 
 class DMHImport(bpy.types.Operator, ImportHelper):
-    """Operator class (bpy.types.Operator, ImportHelper)
-
-    :returns: 'FINISHED'
-
-    """ 
+    """Import .dmh file Operator"""
     bl_idname = "i.dmh"
     bl_label = "Import DMH"
 
@@ -583,11 +579,7 @@ class DMHImport(bpy.types.Operator, ImportHelper):
         return{'FINISHED'}
 
 class DMHExport(bpy.types.Operator, ExportHelper):
-    """Operator class (bpy.types.Operator, ExportHelper)
-
-    :returns: 'FINISHED'
-
-    """     
+    """Export .dmh file Operator"""    
     bl_idname = "e.dmh"
     bl_label = "Export DMH"
 
@@ -601,20 +593,10 @@ class DMHExport(bpy.types.Operator, ExportHelper):
         return{'FINISHED'}
 
 def menu_func_import(self, context):
-    """Menu function
-
-    :returns: none
-
-    """ 
     self.layout.operator(
         DMHImport.bl_idname, text="DMH (.dmh)")
 
 def menu_func_export(self, context):
-    """Menu function
-
-    :returns: none
-
-    """ 
     self.layout.operator(
         DMHExport.bl_idname, text="DMH (.dmh)")
 
